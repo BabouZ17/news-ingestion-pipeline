@@ -1,0 +1,10 @@
+services:
+  fake-news-api:
+    working_dir: /app
+    build:
+      context: ./fake-news-api
+    environment:
+      - PORT=8000
+    ports:
+      - "8000:8000"
+    command: uvicorn main:app --host "0.0.0.0" --port "8000"

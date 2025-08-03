@@ -10,6 +10,33 @@ services:
       - 8000:8000
     command: uvicorn main:app --host "0.0.0.0" --port "8000"
 
+  news-fetcher:
+    container_name: news-fetcher
+    working_dir: /app
+    build:
+      context: ./news-fetcher
+    environment:
+      - TOPIC=test
+      - BOOTSTRAP_SERVERS=kafka:9092
+    command: python3 main.py
+    depends_on:
+      - kafka
+
+  news-scheduler:
+    container_name: news-scheduler
+    working_dir: /app
+    build:
+      context: ./news-scheduler
+    environment:
+      - TOPIC=test
+      - BOOTSTRAP_SERVERS=kafka:9092
+      - PORT=8001
+    ports:
+      - 8001:8001
+    command: uvicorn main:app --host "0.0.0.0" --port "8001"
+    depends_on:
+      - kafka
+
   kafka:
     container_name: kafka
     image: bitnami/kafka:latest
@@ -26,6 +53,7 @@ services:
     volumes:
       - kafka_volume:/bitnami/kafka
     ports:
+      - 9092:9092
       - 9094:9094
 
   kafka-ui:

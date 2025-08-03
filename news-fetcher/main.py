@@ -1,16 +1,14 @@
-from news_fetcher.connectors.http_connector import HTTPConnector
-from news_fetcher.fetchers.http_fecther import HTTPFetcher
-from news_fetcher.parsers.json_parser import JSONParser
+import os
+
+from news_fetcher.connectors.kafka_consumer import KafkaConsumer
 
 if __name__ == "__main__":
-    http_connector = HTTPConnector()
-    http_fetcher = HTTPFetcher(
-        url="http://localhost:8000/api/news", connector=http_connector
-    )
-    json_parser = JSONParser()
+    TOPIC = os.getenv("TOPIC")
+    assert TOPIC is not None, "Invalid topic given"
 
-    data = http_fetcher.fetch()
-    print(data)
+    BOOTSTRAP_SERVERS = os.environ["BOOTSTRAP_SERVERS"]
+    assert BOOTSTRAP_SERVERS is not None, "Invalid boostrap servers given"
 
-    news = json_parser.parse(data)
-    print(news)
+    kafka_consumer = KafkaConsumer(bootstrap_servers=[BOOTSTRAP_SERVERS], topic=TOPIC)
+    while 1:
+        kafka_consumer.read()

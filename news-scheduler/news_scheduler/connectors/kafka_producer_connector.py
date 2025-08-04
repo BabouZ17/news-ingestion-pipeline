@@ -3,7 +3,7 @@ from typing import List
 from kafka import KafkaProducer as Producer
 
 
-class KafkaProducer:
+class KafkaProducerConnector:
     def __init__(
         self, topic: str, bootstrap_servers: List[str], api_version: str = "2.2.15"
     ):

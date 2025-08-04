@@ -10,12 +10,13 @@ logger = logging.getLogger(__name__)
 
 
 class HTTPFetcher(AbstractFetcher):
-    def __init__(self, url: str, connector: HTTPConnector):
-        self.url = url
+    def __init__(self, connector: HTTPConnector):
         self._connector = connector
 
-    def fetch(self) -> str:
+    def fetch(self, url: str) -> str:
         """Fetch news given an url
+        Args:
+            url (str): The url to fetch from.
 
         Returns:
             str
@@ -24,10 +25,10 @@ class HTTPFetcher(AbstractFetcher):
             NewsFetchingException: When an error occured while retrieving news
         """
         try:
-            response: Response = self._connector.get(url=self.url)
+            response: Response = self._connector.get(url=url)
             response.raise_for_status()
         except HTTPError as e:
-            msg = f"Could not fetch news for {self.url}, reason: {e}"
+            msg = f"Could not fetch news for {url}, reason: {e}"
             logger.error(msg)
             raise NewsFetcherFetchingException(msg)
         return response.text

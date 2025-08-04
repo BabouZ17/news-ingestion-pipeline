@@ -5,6 +5,5 @@ class NewsFetcherException(Exception):
 class NewsFetcherFetchingException(NewsFetcherException):
     pass
 
-
-class NewsFetcherParsingException(NewsFetcherException):
+class NewsFetcherConsumerException(NewsFetcherException):
     pass

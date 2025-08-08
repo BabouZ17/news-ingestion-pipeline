@@ -1,12 +1,12 @@
-import os
 import logging
+import os
 import signal
 from threading import Thread
-from news_fetcher.connectors.kafka_consumer_connector import KafkaConsumerConnector
+
 from news_fetcher.connectors.http_connector import HTTPConnector
+from news_fetcher.connectors.kafka_consumer_connector import KafkaConsumerConnector
 from news_fetcher.fetchers.http_fecther import HTTPFetcher
 from news_fetcher.services.news_service import NewsService
-
 
 logging.basicConfig(level=logging.DEBUG)
 logging.getLogger("kafka").setLevel(logging.INFO)

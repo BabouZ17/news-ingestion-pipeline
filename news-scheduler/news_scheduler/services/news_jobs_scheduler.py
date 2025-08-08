@@ -1,11 +1,12 @@
 import logging
-from apscheduler.schedulers.base import STATE_PAUSED, STATE_STOPPED
+from typing import List
+from uuid import uuid4
+
 from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.schedulers.base import STATE_PAUSED, STATE_STOPPED
 from apscheduler.triggers.cron import CronTrigger
 from news_scheduler.connectors.kafka_producer_connector import KafkaProducerConnector
 from pydantic import BaseModel, Field
-from typing import List
-from uuid import uuid4
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,7 @@ class NewsJobScheduler:
             self.add_job(job)
 
     def _default_func(self, job: NewsJob):
-        self._producer_connector.send(key=f"Job: {job.id}", value=job.json())
+        self._producer_connector.send(key=f"Job: {job.id}", value=job.model_dump_json())
 
     def add_job(self, job: NewsJob):
         logger.info(f"Adding news job: {job.id}")

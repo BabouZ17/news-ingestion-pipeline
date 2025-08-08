@@ -1,12 +1,11 @@
 import logging
-from pydantic import BaseModel, field_validator
 from typing import Any, Dict, List
 from uuid import uuid4
 
 from kafka import KafkaConsumer
 from kafka.errors import KafkaError
-
 from news_fetcher.exceptions import NewsFetcherConsumerException
+from pydantic import BaseModel, field_validator
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +32,7 @@ class KafkaConsumerConnector:
         bootstrap_servers: List[str],
         topic: str,
         group_id: str = "default",
-        api_version: str = "2.2.15"
+        api_version: str = "2.2.15",
     ):
         self.topic = topic
         self.group_id = group_id

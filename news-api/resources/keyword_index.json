@@ -1,0 +1,21 @@
+{
+    "mappings": {
+        "properties": {
+            "id": {
+                "type": "text"
+            },
+            "source": {
+                "type": "keyword"
+            },
+            "title": {
+                "type": "keyword"
+            },
+            "body": {
+                "type": "keyword"
+            },
+            "published_at": {
+                "type": "date"
+            }
+        }
+    }
+}

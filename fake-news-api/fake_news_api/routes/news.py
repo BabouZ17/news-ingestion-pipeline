@@ -1,4 +1,5 @@
 from datetime import datetime
+from random import randint
 
 from fake_news_api.models.news import News
 
@@ -68,4 +69,4 @@ NEWS: list[News] = [
 
 def get_news() -> list[News]:
     """Return a list of fake news"""
-    return NEWS
+    return [NEWS[randint(0, len(NEWS) - 1)]]

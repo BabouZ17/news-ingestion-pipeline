@@ -1,12 +1,17 @@
 import logging
 import time
-from pydantic import BaseModel
 from threading import Event
 from typing import Dict, List
-from news_fetcher.connectors.kafka_consumer_connector import KafkaConsumerConnector, Message
+
+from news_fetcher.connectors.kafka_consumer_connector import (
+    KafkaConsumerConnector,
+    Message,
+)
 from news_fetcher.fetchers.abstract_fetcher import AbstractFetcher
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
+
 
 # Will need to address model redundancy
 class NewsJob(BaseModel):

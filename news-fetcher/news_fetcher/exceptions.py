@@ -8,3 +8,7 @@ class NewsFetcherFetchingException(NewsFetcherException):
 
 class NewsFetcherConsumerException(NewsFetcherException):
     pass
+
+
+class NewsFetcherIngestionExcepion(NewsFetcherException):
+    pass

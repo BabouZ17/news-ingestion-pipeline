@@ -18,6 +18,7 @@ services:
     environment:
       - TOPIC=test
       - BOOTSTRAP_SERVERS=kafka:9092
+      - NEWS_API_URL=http://news-api:8002/ingest
     command: python3 main.py
     depends_on:
       - kafka
@@ -43,6 +44,7 @@ services:
     build:
       context: ./news-api
     environment:
+      - OPENAI_API_KEY=REPLACE_BY_YOURS
       - OPENSEARCH_USER=admin
       - OPENSEARCH_PASSWORD=F*ax3Q(8t55O
       - OPENSEARCH_HOST=opensearch
@@ -50,10 +52,6 @@ services:
     ports:
       - 8002:8002
     command: uvicorn main:app --host "0.0.0.0" --port 8002
-    networks:
-      - opensearch-net
-    depends_on:
-      - opensearch
 
   kafka:
     container_name: kafka
@@ -98,8 +96,6 @@ services:
     ports:
       - 9200:9200
       - 9600:9600
-    networks:
-      - opensearch-net
 
   opensearch-dashboards:
     image: opensearchproject/opensearch-dashboards:3.0.0
@@ -110,15 +106,9 @@ services:
       - "5601"
     environment:
       OPENSEARCH_HOSTS: '["https://opensearch:9200"]'
-    networks:
-      - opensearch-net
     depends_on:
       - opensearch
 
 volumes:
   kafka_volume:
   opensearch_volume:
-
-
-networks:
-  opensearch-net:

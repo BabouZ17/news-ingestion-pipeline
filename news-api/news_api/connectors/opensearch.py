@@ -1,6 +1,6 @@
 import logging
 import os
-from typing import Any, Dict
+from typing import Any
 
 from opensearchpy import AsyncOpenSearch
 
@@ -30,28 +30,41 @@ class OpensearchConnector:
             ssh_show_warn=False,
         )
 
-    async def create_index(self, index: str, body: Dict[str, Any]):
+    @staticmethod
+    def map_result(result: dict[str, Any]) -> list[dict[str, Any]]:
+        items: list[dict[str, Any]] = list()
+        for item in result["hits"]["hits"]:
+            items.append(item["_source"])
+        return items
+
+    async def search(self, index: str, body: dict[str, Any]) -> list[dict[str, Any]]:
+        result = await self._client.search(index=index, body=body)
+        return self.map_result(result)
+
+    async def create_index(self, index: str, body: dict[str, Any]):
         if not await self._client.indices.exists(index=index):
             await self._client.indices.create(index=index, body=body)
         else:
             logger.info(f"Index {index} already exists!")
 
     async def index_document(self, index: str, document: Any, id: str):
+        # If needed, bulk api is available...
         await self._client.index(index=index, body=document, id=id)
 
     async def list_documents(self, index: str) -> list[dict[str, Any]]:
         result = await self._client.search(
             index=index, body={"query": {"match_all": {}}}
         )
-
-        items: list[dict[str, Any]] = list()
-        for item in result["hits"]["hits"]:
-            items.append(item["_source"])
-        return items
+        return self.map_result(result)
 
     async def count(self, index: str) -> int:
         result: dict[str, Any] = await self._client.count(index=index)
         return result["count"]
+
+    async def delete_documents(self, index: str):
+        await self._client.delete_by_query(
+            index=index, body={"query": {"match_all": {}}}
+        )
 
     async def close(self):
         await self._client.close()

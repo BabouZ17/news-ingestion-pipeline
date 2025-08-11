@@ -5,19 +5,25 @@ from news_api.connectors.opensearch import OpensearchConnector, get_connector
 from news_api.models.news import News
 
 
-class NewsVectorRepository:
-    def __init__(self, connector: OpensearchConnector, index: str = "news-vc"):
-        self.connector = connector
-        self.index = index
-
-
 class NewsRepository:
     def __init__(self, connector: OpensearchConnector, index: str = "news"):
         self.connector = connector
         self.index = index
 
+    async def keyword_search(self, term: str, size: int = 20) -> list[News]:
+        body = {"query": {"match": {"body": term}}, "size": size}
+        items = await self.connector.search(index=self.index, body=body)
+
+        news: list[News] = list()
+        for item in items:
+            news.append(News.model_validate(item))
+        return news
+
     async def count(self) -> int:
         return await self.connector.count(index=self.index)
+
+    async def delete_news(self):
+        return await self.connector.delete_documents(index=self.index)
 
     async def add_news(self, news: News):
         await self.connector.index_document(
@@ -30,7 +36,7 @@ class NewsRepository:
             index=self.index
         )
         for item in items:
-            news.append(News.model_validate(**item))
+            news.append(News.model_validate(item))
         return news
 
 
@@ -38,11 +44,4 @@ async def get_repository(
     connector: Annotated[OpensearchConnector, Depends(get_connector)],
 ):
     repository = NewsRepository(connector=connector)
-    yield repository
-
-
-async def get_vc_repository(
-    connector: Annotated[OpensearchConnector, Depends(get_connector)],
-):
-    repository = NewsVectorRepository(connector=connector)
     yield repository

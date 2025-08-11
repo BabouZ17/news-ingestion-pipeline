@@ -4,7 +4,8 @@ from pydantic import BaseModel
 
 
 class News(BaseModel):
+    id: str
     source: str
     title: str
-    content: str
-    posted_at: datetime
+    body: str
+    published_at: datetime

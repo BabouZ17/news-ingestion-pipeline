@@ -1,0 +1,43 @@
+{
+    "settings": {
+        "index": {
+            "knn": true
+        }
+    },
+    "mappings": {
+        "properties": {
+            "id": {
+                "type": "text"
+            },
+            "source": {
+                "type": "keyword"
+            },
+            "title": {
+                "type": "text"
+            },
+            "body": {
+                "type": "text"
+            },
+            "published_at": {
+                "type": "date"
+            },
+            "embeddings": {
+                "type": "nested",
+                "properties": {
+                    "embedding": {
+                        "type": "knn_vector",
+                        "dimension": 1536,
+                        "method": {
+                            "name": "hnsw",
+                            "space_type": "cosinesimil",
+                            "engine": "faiss"
+                        }
+                    },
+                    "text_chunk": {
+                        "type": "text"
+                    }
+                }
+            }
+        }
+    }
+}

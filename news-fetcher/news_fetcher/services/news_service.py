@@ -1,30 +1,28 @@
 import logging
 import time
 from threading import Event
-from typing import Dict, List
 
 from news_fetcher.connectors.kafka_consumer_connector import (
     KafkaConsumerConnector,
     Message,
 )
+from news_fetcher.connectors.news_api_connector import NewsAPIConnector
 from news_fetcher.fetchers.abstract_fetcher import AbstractFetcher
-from pydantic import BaseModel
+from news_fetcher.models.news import News, NewsList
+from news_fetcher.models.news_job import NewsJob
 
 logger = logging.getLogger(__name__)
 
 
-# Will need to address model redundancy
-class NewsJob(BaseModel):
-    id: str
-    name: str
-    url: str
-
-
 class NewsService:
     def __init__(
-        self, fetcher: AbstractFetcher, kafka_consumer_connector: KafkaConsumerConnector
+        self,
+        news_fetcher: AbstractFetcher,
+        news_api_connector: NewsAPIConnector,
+        kafka_consumer_connector: KafkaConsumerConnector,
     ):
-        self.fetcher = fetcher
+        self.news_fetcher = news_fetcher
+        self.news_api_connector = news_api_connector
         self.kafka_consumer_connector = kafka_consumer_connector
         self.event = Event()
 
@@ -34,12 +32,21 @@ class NewsService:
     def run(self):
         logger.info("Starting to run...")
         while self.is_running():
-            messages: List[Message] | None = self.kafka_consumer_connector.consume()
+            messages: list[Message] | None = self.kafka_consumer_connector.consume()
             if messages is not None:
-                jobs: List[NewsJob] = []
                 for msg in messages:
-                    jobs.append(NewsJob.model_validate_json(msg.value))
-                logger.debug(jobs)
+                    # Parse message
+                    job: NewsJob = NewsJob.model_validate_json(msg.value)
+                    logger.info(f"Received job: {job.model_dump()}")
+
+                    # Fetch news
+                    content: str = self.news_fetcher.fetch(job.url)
+                    logger.debug(f"Retrieved news info: {content[:100]}")
+
+                    news: NewsList = NewsList.model_validate_json(content)
+
+                    # Invoke news ingestion
+                    self.news_api_connector.ingest_news(news)
             else:
                 time.sleep(1)
 

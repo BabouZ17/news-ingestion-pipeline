@@ -21,3 +21,6 @@ class HTTPConnector:
 
     def get(self, *args, **kwargs) -> Response:
         return self.session.get(*args, **kwargs)
+
+    def post(self, *args, **kwargs) -> Response:
+        return self.session.post(*args, **kwargs)

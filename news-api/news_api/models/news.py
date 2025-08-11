@@ -3,12 +3,21 @@ from datetime import datetime
 from pydantic import BaseModel
 
 
-class News(BaseModel):
+class NewsEmbedding(BaseModel):
+    chunk: str
+    embedding: list[float]
+
+
+class BaseNews(BaseModel):
     id: str
     source: str
     title: str
-    body: str | None
+    body: str | None = None
     published_at: datetime
+
+
+class News(BaseNews):
+    embeddings: list[NewsEmbedding] | None = None
 
 
 class NewsCount(BaseModel):

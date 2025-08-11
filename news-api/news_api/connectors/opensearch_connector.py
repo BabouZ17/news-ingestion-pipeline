@@ -48,7 +48,6 @@ class OpensearchConnector:
             logger.info(f"Index {index} already exists!")
 
     async def index_document(self, index: str, document: Any, id: str):
-        # If needed, bulk api is available...
         await self._client.index(index=index, body=document, id=id)
 
     async def list_documents(self, index: str) -> list[dict[str, Any]]:

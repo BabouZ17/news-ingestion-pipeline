@@ -1,19 +1,13 @@
-import logging
 import os
 from datetime import datetime
-from typing import Annotated
 
-from fastapi import Depends
 from langchain_community.utils.math import cosine_similarity
-from news_api.connectors.opensearch_connector import OpensearchConnector
+from langchain_openai import OpenAIEmbeddings
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from news_api.models.news import News, NewsEmbedding
-from news_api.repositories.news import NewsRepository, get_news_repository
-from news_api.services.news_embeddings_service import NewsEmbeddingsService
-
-logger = logging.getLogger(__name__)
 
 # Corpus of words to compare relevancy upon
-CORPUS: list[str] = ["cybersecurity threats", "outages", "software bugs"]
+CORPUS: list[str] = ["cybersecurity threats", "major outages", "software bugs"]
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 assert OPENAI_API_KEY is not None, "Invalid OPENAI_API_KEY"
@@ -22,14 +16,16 @@ assert OPENAI_API_KEY is not None, "Invalid OPENAI_API_KEY"
 class NewsIngestionService:
     def __init__(
         self,
-        embeddings_service: NewsEmbeddingsService,
-        repository: NewsRepository,
+        model: str = "text-embedding-3-small",
         ingestion_threshold: float = 0.5,
     ):
-        self.embeddings_service = embeddings_service
-        self.repository = repository
+        self.splitter = RecursiveCharacterTextSplitter(chunk_size=250, chunk_overlap=10)
+        self.embeddings_model = OpenAIEmbeddings(model=model)
         self.ingestion_threshold = ingestion_threshold
         self._embedded_corpus = dict()
+
+    def _split_text(self, text: str) -> list[str]:
+        return self.splitter.split_text(text)
 
     def embedded_corpus(self) -> dict[str, list[list[float]]]:
         """Compute the embeddings of the corpus
@@ -41,12 +37,20 @@ class NewsIngestionService:
         """
         if len(self._embedded_corpus) == 0:
             for corpus_sentence in CORPUS:
-                self._embedded_corpus[corpus_sentence] = (
-                    self.embeddings_service.create_embeddings(
-                        self.embeddings_service.split_text(corpus_sentence)
-                    )
+                self._embedded_corpus[corpus_sentence] = self._create_embeddings(
+                    self._split_text(corpus_sentence)
                 )
         return self._embedded_corpus
+
+    def _create_embeddings(self, sentences: list[str]) -> list[list[float]]:
+        """Compute embeddings for a list of sentences
+
+        Args:
+            sentences (list[str]): Sentences to embed
+        Returns:
+            list[list[float]]
+        """
+        return self.embeddings_model.embed_documents(sentences)
 
     def should_ingest(self, news: News) -> tuple[bool, list[NewsEmbedding]]:
         """Check if a news content is relevant enough to be ingested
@@ -64,13 +68,12 @@ class NewsIngestionService:
             tuple[boolean, list[NewsEmbedding]]
         """
         # Split the raw content
-        text_chunks: list[str] = self.embeddings_service.split_text(
+        text_chunks: list[str] = self._split_text(
             text=news.body if news.body is not None else ""
         )
-        logger.debug(f"text_chunks: {text_chunks[:100]}")
 
         # Compute embeddings for text chunks
-        text_embeddings = self.embeddings_service.create_embeddings(text_chunks)
+        text_embeddings = self._create_embeddings(text_chunks)
 
         corpus_similarities_scores: list[float] = list()
         for corpus_embedding in self.embedded_corpus().values():
@@ -88,24 +91,6 @@ class NewsIngestionService:
             corpus_similarities_scores[-1] >= self.ingestion_threshold,
             news_embeddings,
         )
-
-    async def ingest_news(self, news: News):
-        """Ingest news into database
-
-        Args:
-            news (News)
-        """
-        await self.repository.add_news(news)
-
-
-async def get_news_ingestion_service(
-    embeddings_service: Annotated[NewsEmbeddingsService, Depends()],
-    repository: Annotated[NewsRepository, Depends(get_news_repository)],
-):
-    service = NewsIngestionService(
-        embeddings_service=embeddings_service, repository=repository
-    )
-    yield service
 
 
 if __name__ == "__main__":
@@ -134,10 +119,7 @@ if __name__ == "__main__":
         ),
     ]
 
-    ingestion_service = NewsIngestionService(
-        embeddings_service=NewsEmbeddingsService(),
-        repository=NewsRepository(connector=OpensearchConnector()),
-    )
+    service = NewsIngestionService()
     for ex in exemples:
-        result, _ = ingestion_service.should_ingest(ex)
+        result, _ = service.should_ingest(ex)
         print(result)

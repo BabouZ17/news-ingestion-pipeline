@@ -1,14 +1,12 @@
 from fastapi import APIRouter, FastAPI
 from news_api.routes.home import home
-from news_api.routes.index import create_index
 from news_api.routes.news import (
     add_news,
     count_news,
+    create_index,
     delete_news,
     get_news,
-    hybrid_search_news,
-    keyword_search_news,
-    knn_search_news,
+    search_news,
 )
 
 home_router = APIRouter()
@@ -19,15 +17,13 @@ news_router.add_api_route("/", get_news)
 news_router.add_api_route("/", add_news, methods=["POST"])
 news_router.add_api_route("/", delete_news, methods=["DELETE"])
 
-news_router.add_api_route("/search", keyword_search_news)
-news_router.add_api_route("/hybridSearch", hybrid_search_news)
-news_router.add_api_route("/knnSearch", knn_search_news)
+news_router.add_api_route("/search", search_news)
 news_router.add_api_route("/count", count_news)
 news_router.add_api_route("/createIndex", create_index)
 
 test_router = APIRouter()
 test_router.add_api_route("/ingest", add_news, methods=["POST"])
-test_router.add_api_route("/retrieve", hybrid_search_news)
+test_router.add_api_route("/retrieve", get_news)
 
 app = FastAPI()
 app.include_router(home_router)

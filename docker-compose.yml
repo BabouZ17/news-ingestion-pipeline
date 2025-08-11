@@ -52,7 +52,7 @@ services:
     build:
       context: ./news-api
     environment:
-      - OPENAI_API_KEY=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
+      - OPENAI_API_KEY=REPLACE_BY_YOURS
       - OPENSEARCH_USER=admin
       - OPENSEARCH_PASSWORD=F*ax3Q(8t55O
       - OPENSEARCH_HOST=opensearch

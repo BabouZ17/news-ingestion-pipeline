@@ -8,20 +8,20 @@ from news_api.routes.news import (
     get_news,
     hybrid_search_news,
     keyword_search_news,
-    knn_search_news,
+    semantic_search_news,
 )
 
 home_router = APIRouter()
 home_router.add_api_route("/", home)
 
-news_router = APIRouter(prefix="/news")
+news_router = APIRouter(prefix="/api/news")
 news_router.add_api_route("/", get_news)
 news_router.add_api_route("/", add_news, methods=["POST"])
 news_router.add_api_route("/", delete_news, methods=["DELETE"])
 
-news_router.add_api_route("/search", keyword_search_news)
+news_router.add_api_route("/keywordSearch", keyword_search_news)
 news_router.add_api_route("/hybridSearch", hybrid_search_news)
-news_router.add_api_route("/knnSearch", knn_search_news)
+news_router.add_api_route("/semanticSearch", semantic_search_news)
 news_router.add_api_route("/count", count_news)
 news_router.add_api_route("/createIndex", create_index)
 

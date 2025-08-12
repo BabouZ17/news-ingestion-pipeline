@@ -29,7 +29,7 @@ async def hybrid_search_news(
     return [BaseNews.model_validate(n) for n in news]
 
 
-async def knn_search_news(
+async def semantic_search_news(
     repository: Annotated[NewsRepository, Depends(get_news_repository)],
     news_embeddings_service: Annotated[
         NewsEmbeddingsService, Depends(get_news_embeddings_service)
@@ -43,9 +43,9 @@ async def knn_search_news(
 
 async def keyword_search_news(
     repository: Annotated[NewsRepository, Depends(get_news_repository)],
-    term: Annotated[str, Query(max_length=50)] = "cybersecurity",
+    query: Annotated[str, Query(max_length=50)] = "cybersecurity",
 ) -> list[BaseNews]:
-    news: list[News] = await repository.keyword_search(term=term)
+    news: list[News] = await repository.keyword_search(query=query)
     return [BaseNews.model_validate(n) for n in news]
 
 

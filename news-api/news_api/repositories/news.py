@@ -45,7 +45,7 @@ class NewsRepository:
                         }
                     },
                     "should": [
-                        {"range": {"published_at": {"boost": boost, "gte": "now-7d/d"}}}
+                        {"range": {"published_at": {"boost": boost, "gte": "now-1d/d"}}}
                     ],
                 }
             }
@@ -53,8 +53,11 @@ class NewsRepository:
         items = await self.connector.search(index=self.index, body=body)
         return self.map_to_news(items)
 
-    async def keyword_search(self, term: str, size: int = 20) -> list[News]:
-        body = {"query": {"match": {"body": term}}, "size": size}
+    async def keyword_search(self, query: str, size: int = 20) -> list[News]:
+        body = {
+            "query": {"multi_match": {"query": query, "fields": ["title^3", "body"]}},
+            "size": size,
+        }
         items = await self.connector.search(index=self.index, body=body)
         return self.map_to_news(items)
 

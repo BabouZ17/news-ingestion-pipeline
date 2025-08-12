@@ -8,7 +8,10 @@ from langchain_community.utils.math import cosine_similarity
 from news_api.connectors.opensearch_connector import OpensearchConnector
 from news_api.models.news import News, NewsEmbedding
 from news_api.repositories.news import NewsRepository, get_news_repository
-from news_api.services.news_embeddings_service import NewsEmbeddingsService
+from news_api.services.news_embeddings_service import (
+    NewsEmbeddingsService,
+    get_news_embeddings_service,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +102,9 @@ class NewsIngestionService:
 
 
 async def get_news_ingestion_service(
-    embeddings_service: Annotated[NewsEmbeddingsService, Depends()],
+    embeddings_service: Annotated[
+        NewsEmbeddingsService, Depends(get_news_embeddings_service)
+    ],
     repository: Annotated[NewsRepository, Depends(get_news_repository)],
 ):
     service = NewsIngestionService(

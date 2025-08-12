@@ -51,7 +51,7 @@ NEWS: list[News] = [
         source="cyberspace",
         title="The Rise of Phishing Attacks",
         body="Phishing attacks have become increasingly common in recent years, with hackers targeting businesses, governments, and individuals alike. These attacks involve tricking individuals into revealing sensitive information, such as login credentials or financial information. To protect against phishing attacks, it's essential to implement robust cybersecurity measures, including employee training and email filtering.",
-        published_at=datetime(year=2024, month=3, day=4),
+        published_at=datetime.now() - timedelta(days=2),
     ),
     News(
         id="8",
@@ -72,7 +72,7 @@ NEWS: list[News] = [
         source="cyber-world",
         title="The Importance of Software Updates",
         body="Software updates are a critical aspect of cybersecurity, with outdated software providing an easy entry point for hackers. To protect against software-related threats, it's essential to implement robust software update practices, including regular updates and patching. This can help prevent cyber attacks and protect sensitive data.",
-        published_at=datetime.now() - timedelta(days=10),
+        published_at=datetime.now() - timedelta(days=1),
     ),
     # False positives
     News(

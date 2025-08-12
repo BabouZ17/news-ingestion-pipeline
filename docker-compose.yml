@@ -45,6 +45,10 @@ services:
       context: ./news-api-ui
     environment:
       - PORT=8081
+      - NEWS_API_URL=http://news-api:8002/api/news
+    ports:
+      - 8081:8081
+    command: streamlit run main.py --server.port=8081 --server.address=0.0.0.0
 
   news-api:
     container_name: news-api
@@ -52,7 +56,7 @@ services:
     build:
       context: ./news-api
     environment:
-      - OPENAI_API_KEY=REPLACE_BY_YOURS
+      - OPENAI_API_KEY=REPLACE_WITH_YOURS
       - OPENSEARCH_USER=admin
       - OPENSEARCH_PASSWORD=F*ax3Q(8t55O
       - OPENSEARCH_HOST=opensearch

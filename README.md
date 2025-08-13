@@ -5,15 +5,28 @@ The aim of this project is to build an ingestion pipeline for news. The system h
 
 ### High level design
 
-### Ads filtering
+### Ads filtering and relevancy
+To measure relevancy of a news related to our IT managers interests, we use cosine_similarity and embeddings.
+
+The flow is as follow:
+1. Check if the news is already in the index (news is not ingested if already present)
+2. Tokenize the corpus sentences ("cybersecurity threats", "outage", "software bugs")
+3. Compute embeddings for the tokenized corpus chunks
+4. Tokenize the news body
+5. Compute embeddings for the tokenized news body chunks
+6. For each corpus sentence, we compute the cosine similarity with the news body embeddings.
+7. Sort the corpus similarities.
+8. If highest superior or equal to arbitrary threshold, then news is valid for ingestion, otherwise discarded.
+
+![notfound](./resources/filtering_relevancy.png)
 
 ### Search / Retrieval of news
 The design supports three ways of retrieving the news:
 | Retrieval type | Description |
 | -------------- | ----------- |
-| keyword | Opensearch uses a BM25 algorithm to rank documents which basically gives higher points when the query terms are frequently used [more details](https://docs.opensearch.org/latest/search-plugins/keyword-search/) |
+| keyword | Opensearch uses a BM25 algorithm to rank documents which basically gives higher points when the query terms are frequently used [more details](https://docs.opensearch.org/latest/search-plugins/keyword-search/). |
 | semantic | The semantic search uses the embeddings computed to make an approximate knn search. More semantically close text chunks in news will have a higher cosine similarity and then rank higher in the result. |
-| hybrid | The hybrid search leverages the semantic searches but add boosting to the result. The "published_at" field of the news is boosted to move news 1 day old higher in the reponse |
+| hybrid | The hybrid search leverages the semantic searches but add boosting to the result. The "published_at" field of the news is boosted to move news 1 day old higher in the reponse. |
 
 ## How to setup
 

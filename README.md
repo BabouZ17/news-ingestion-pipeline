@@ -8,11 +8,17 @@ The aim of this project is to build an ingestion pipeline for news. The system h
 ### Ads filtering
 
 ### Search / Retrieval of news
+The design supports three ways of retrieving the news:
+| Retrieval type | Description |
+| -------------- | ----------- |
+| keyword | Opensearch uses a BM25 algorithm to rank documents which basically gives higher points when the query terms are frequently used [more details](https://docs.opensearch.org/latest/search-plugins/keyword-search/) |
+| semantic | The semantic search uses the embeddings computed to make an approximate knn search. More semantically close text chunks in news will have a higher cosine similarity and then rank higher in the result. |
+| hybrid | The hybrid search leverages the semantic searches but add boosting to the result. The "published_at" field of the news is boosted to move news 1 day old higher in the reponse |
 
 ## How to setup
 
 ### Pre-requisites
-For the project to run, you will have to have (docker compose)[https://docs.docker.com/compose/install/linux/] installed on your environment.
+For the project to run, you will have to have [docker compose](https://docs.docker.com/compose/install/linux/) installed on your environment.
 
 First, you will need [docker engine and docker-cli](https://docs.docker.com/engine/install/) installed.
 
@@ -57,7 +63,7 @@ You will need a valid OPENAI Api Key to run the project. Just replace the "REPLA
 Find bellow the different services information.
 
 | Service name  | Description | Openapi url |
-| ------------- | ------------- |
+| ------------  | ----------- | ----------- |
 | fake-news-api  | A dummy api service exposing a few news.  | http://localhost:8000/docs |
 | news-scheduler  | Service responsible for dispatching news jobs on kafka topic. It can either schedule news jobs or accept dynamic queries using its REST API  | http://localhost:8001/docs |
 | news-fetcher | Service responsible for downloading news content. It is listening on kafka topics. | Not applicable |

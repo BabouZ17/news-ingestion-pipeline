@@ -75,6 +75,68 @@ make a GET HTTP call on the endpoint http://localhost:8002/api/news/createIndex
 You will need a valid OPENAI Api Key to run the project. Just replace the "REPLACE_BY_YOURS" in the docker-compose.yml file by your key.
 
 ## Technical details
+
+### Opensearch
+
+#### Index mapping
+The following mapping was used for the opensearch index:
+```json
+{
+    "settings": {
+        "index": {
+            "knn": true
+        }
+    },
+    "mappings": {
+        "properties": {
+            "id": {
+                "type": "text"
+            },
+            "source": {
+                "type": "keyword"
+            },
+            "title": {
+                "type": "text"
+            },
+            "body": {
+                "type": "text"
+            },
+            "published_at": {
+                "type": "date"
+            },
+            "embeddings": {
+                "type": "nested",
+                "properties": {
+                    "embedding": {
+                        "type": "knn_vector",
+                        "dimension": 1536,
+                        "method": {
+                            "name": "hnsw",
+                            "space_type": "cosinesimil",
+                            "engine": "faiss"
+                        }
+                    },
+                    "text_chunk": {
+                        "type": "text"
+                    }
+                }
+            }
+        }
+    }
+}
+```
+It allows doing knn search with cosine similarity while also supporting keyword based queries. I assumed the news average content would be at worst a thousand characters, therefore storing the news body in each document is acceptable.
+
+#### Search / Retrieval
+
+##### Keyword
+
+##### Semantic search
+
+##### Hybrid
+
+
+### Services
 Find bellow the different services information.
 
 | Service name  | Description | Openapi url |
@@ -90,4 +152,13 @@ Find bellow the different services information.
 
 
 ### Remarks / Possible improvements
-#### Pull / Push
+#### Polling / Push
+In the current design, the approach to get news was to do Polling. A better approach would be to have the different news api invoke our news-scheduler once a new news is avaible. It will avoid wasting resource on our side.
+
+#### Error handling
+Error handling was kept to really the basis. The design did not dive in complex cases. For instance, once a news-fetcher fails to download the news content, should it commit the offset to kafka and skip the news or maybe push it to another retry alike topoc.
+
+#### News scheduler
+The news-scheduler uses a library called apscheduler and is relevant for simple design. But in the real word, we would need a more robust solution involving a broker to not loose the state of the scheduled jobs in case of a failure. Also, in the current design, if we increase the number of workers for news-scheduler, the same scheduled jobs will run multiple times.
+
+#### Measuring relevancy

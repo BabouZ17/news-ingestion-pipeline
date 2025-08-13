@@ -85,7 +85,9 @@ Find bellow the different services information.
 | news-api | Service responsible for managing news, creating index and making searches | http://localhost:8002/docs |
 | news-appi-ui | A little streamlit application to run different types of searches (keyword, semantic, hybrid) | http://localhost:8081/docs |
 | kafba ui | Dashboard to interact with kafka cluster | http://localhost:8080 |
+| opensearch | Document database to store vectors and run queries upon them | http://localhost:9200 |
 | opensearch-dashboards | Dashboard to interact with opensearch indices - PS: username: admin, password: F*ax3Q(8t55O | http://localhost:5601 |
 
 
 ### Remarks / Possible improvements
+#### Pull / Push

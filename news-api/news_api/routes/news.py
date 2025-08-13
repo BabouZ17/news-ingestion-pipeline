@@ -75,24 +75,17 @@ async def add_news(
 
 
 async def get_news(
-    repository: Annotated[NewsRepository, Depends(get_news_repository)],
-) -> list[BaseNews]:
-
-    news: list[News] = await repository.get_all_news()
-    return [BaseNews.model_validate(n) for n in news]
-
-
-async def get_news_by_id(
-    id: str,
     response: Response,
-    repository: Annotated[
-        NewsRepository,
-        Depends(get_news_repository),
-    ],
-) -> BaseNews | CustomResponse:
-    news: News | None = await repository.get_news(id)
-    if news is not None:
-        return BaseNews.model_validate(news)
+    repository: Annotated[NewsRepository, Depends(get_news_repository)],
+    id: str | None = None,
+) -> list[BaseNews] | BaseNews | CustomResponse:
+    if id is None:
+        all_news: list[News] = await repository.get_all_news()
+        return [BaseNews.model_validate(new) for new in all_news]
+    else:
+        news: News | None = await repository.get_news(id)
+        if news is not None:
+            return BaseNews.model_validate(news)
 
-    response.status_code = status.HTTP_404_NOT_FOUND
-    return CustomResponse(message=f"News: {id} does not exist!")
+        response.status_code = status.HTTP_404_NOT_FOUND
+        return CustomResponse(message=f"News: {id} does not exist!")

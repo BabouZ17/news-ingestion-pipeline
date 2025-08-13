@@ -24,7 +24,7 @@ def build_app() -> FastAPI:
     news_jobs_scheduler = NewsJobSchedulerService(jobs=jobs, runner=runner_service)
 
     home_router = APIRouter()
-    home_router.add_api_route("/", home)
+    home_router.add_api_route("/", home, methods=["GET"])
 
     jobs_router = APIRouter(prefix="/jobs")
     jobs_router.add_api_route("/run_job", run_job, methods=["POST"])

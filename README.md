@@ -5,6 +5,8 @@ The aim of this project is to build an ingestion pipeline for news. The system h
 
 ### High level design
 
+![notfound](./resources/high_level_design.png)
+
 ### Ads filtering and relevancy
 To measure relevancy of a news related to our IT managers interests, we use cosine_similarity and embeddings.
 

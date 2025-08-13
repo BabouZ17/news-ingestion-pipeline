@@ -7,6 +7,42 @@ The aim of this project is to build an ingestion pipeline for news. The system h
 
 ![notfound](./resources/high_level_design.png)
 
+### Data
+NewsEmbeddings:
+| Field | Type |
+| ----- | ---- |
+| chunk | str |
+| embedding | list[float] |
+
+NewsEmbeddings object example:
+```
+{
+    "chunk": "blabla...",
+    "embeddings": [1.5, 2.5, ...]
+}
+```
+
+News:
+| Field | Type |
+| ----- | ---- |
+| id | str |
+| source | str |
+| title | str |
+| body | Optional[str] |
+| embeddings | List[Embedding] |
+| published_at | datetime |
+
+News object example:
+```
+{
+    "id": "1",
+    "source": "cyberweb",
+    "title": "cybersecurity in the word is shifting",
+    "body": "...",
+    "published_at": "2025-01-01T00:00:00"
+}
+```
+
 ### Ads filtering and relevancy
 To measure relevancy of a news related to our IT managers interests, we use cosine_similarity and embeddings.
 
@@ -130,11 +166,77 @@ It allows doing knn search with cosine similarity while also supporting keyword 
 #### Search / Retrieval
 
 ##### Keyword
+Default opensearch method for retrieving documents. It measures the occurences of terms in the documents and ranks them accordingly.
+
+The query used to power the keyword search looks for the terms in the news body and title.
+Title match will boost 3 times more than those in body.
+
+Example of query assuming the query term is "cybersecurity" and the maximum number of documents to retrieve is 20:
+```
+{
+    "query":
+        {
+            "multi_match": {
+                "query": "cybersecurity",
+                "fields": ["title^3", "body"]
+            }
+    },
+    "size": 20
+}
+```
 
 ##### Semantic search
+Find semantically similar news and the return the 20 best matches ordered by cosine similarity score.
 
+Example of query with top 20 matches:
+```
+{
+    "query": {
+        "nested": {
+            "path": "embeddings",
+                "query": {
+                    "knn": {"embeddings.embedding": {"vector": [1.0, ...], "k": 20}}
+            },
+        }
+    }
+}
+```
 ##### Hybrid
+Hybrid search leverages the semantic search while also boosting other fields. In this case, we give a boost of 100 points to news being published 1 day from the query time.
+It will rank higher news that semantically match the query terms and that are recent (within one day). 
 
+Example of query with top 20 matches:
+```
+{
+    "query": {
+        "bool": {
+            "must": {
+                "nested": {
+                    "path": "embeddings",
+                    "query": {
+                        "knn": {
+                            "embeddings.embedding": {
+                                "vector": [1.0, ...],
+                                "k": 20
+                            }
+                        }
+                    },
+                }
+            },
+            "should": [
+                {
+                    "range": {
+                        "published_at": {
+                            "boost": 100,
+                            "gte": "now-1d/d"
+                        }
+                    }
+                }
+            ],
+        }
+    }
+}
+```
 
 ### Services
 Find bellow the different services information.

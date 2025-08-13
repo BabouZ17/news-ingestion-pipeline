@@ -3,6 +3,7 @@ import os
 import signal
 from threading import Thread
 
+from news_fetcher.config.config import Config
 from news_fetcher.connectors.http_connector import HTTPConnector
 from news_fetcher.connectors.kafka_consumer_connector import KafkaConsumerConnector
 from news_fetcher.connectors.news_api_connector import NewsAPIConnector
@@ -15,19 +16,15 @@ logging.getLogger("kafka").setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
 
 if __name__ == "__main__":
-    TOPIC = os.getenv("TOPIC")
-    assert TOPIC is not None, "Invalid 'TOPIC' given"
-
-    BOOTSTRAP_SERVERS = os.getenv("BOOTSTRAP_SERVERS")
-    assert BOOTSTRAP_SERVERS is not None, "Invalid 'BOOTSTRAP_SERVERS' given"
+    config = Config()
 
     kafka_consumer_connector = KafkaConsumerConnector(
-        bootstrap_servers=[BOOTSTRAP_SERVERS], topic=TOPIC
+        topic=config.topic, bootstrap_servers=[config.bootstrap_servers]
     )
 
-    NEWS_API_URL = os.getenv("NEWS_API_URL")
-    assert NEWS_API_URL is not None, "Invalid 'NEWS_API_URL' given"
-    news_api_connector = NewsAPIConnector(url=NEWS_API_URL, connector=HTTPConnector())
+    news_api_connector = NewsAPIConnector(
+        url=config.news_api_url, connector=HTTPConnector()
+    )
 
     news_service = NewsService(
         news_fetcher=HTTPFetcher(connector=HTTPConnector()),

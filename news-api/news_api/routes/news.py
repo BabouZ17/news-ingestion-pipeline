@@ -1,9 +1,9 @@
 import logging
 from typing import Annotated
 
-from fastapi import Depends, Query
+from fastapi import Depends, Query, Response, status
+from news_api.models.custom_response import CustomResponse
 from news_api.models.news import BaseNews, News, NewsCount
-from news_api.models.response import Response
 from news_api.repositories.news import NewsRepository, get_news_repository
 from news_api.services.news_embeddings_service import (
     NewsEmbeddingsService,
@@ -58,9 +58,9 @@ async def count_news(
 
 async def delete_news(
     repository: Annotated[NewsRepository, Depends(get_news_repository)],
-) -> Response:
+) -> CustomResponse:
     await repository.delete_news()
-    return Response(message="All news were deleted")
+    return CustomResponse(message="All news were deleted")
 
 
 async def add_news(
@@ -68,18 +68,10 @@ async def add_news(
     ingestion_service: Annotated[
         NewsIngestionService, Depends(get_news_ingestion_service)
     ],
-) -> Response:
-    count = len(news_candidates)
+) -> CustomResponse:
     news: list[News] = [News.model_validate(n.model_dump()) for n in news_candidates]
-    for news_candidate in news:
-        should_ingest, embeddings = ingestion_service.should_ingest(news_candidate)
-        if should_ingest:
-            news_candidate.embeddings = embeddings
-            await ingestion_service.ingest_news(news_candidate)
-        else:
-            count -= 1
-            logger.info(f"News with id: {news_candidate.id} failed to be ingested")
-    return Response(message=f"{count} were successfully saved")
+    count = await ingestion_service.ingest_news(news)
+    return CustomResponse(message=f"{count} were successfully saved")
 
 
 async def get_news(
@@ -88,3 +80,19 @@ async def get_news(
 
     news: list[News] = await repository.get_all_news()
     return [BaseNews.model_validate(n) for n in news]
+
+
+async def get_news_by_id(
+    id: str,
+    response: Response,
+    repository: Annotated[
+        NewsRepository,
+        Depends(get_news_repository),
+    ],
+) -> BaseNews | CustomResponse:
+    news: News | None = await repository.get_news(id)
+    if news is not None:
+        return BaseNews.model_validate(news)
+
+    response.status_code = status.HTTP_404_NOT_FOUND
+    return CustomResponse(message=f"News: {id} does not exist!")

@@ -6,6 +6,7 @@ from news_api.routes.news import (
     count_news,
     delete_news,
     get_news,
+    get_news_by_id,
     hybrid_search_news,
     keyword_search_news,
     semantic_search_news,
@@ -16,6 +17,7 @@ home_router.add_api_route("/", home)
 
 news_router = APIRouter(prefix="/api/news")
 news_router.add_api_route("/", get_news)
+news_router.add_api_route("/{id}", get_news_by_id)
 news_router.add_api_route("/", add_news, methods=["POST"])
 news_router.add_api_route("/", delete_news, methods=["DELETE"])
 

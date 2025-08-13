@@ -1,8 +1,8 @@
 import os
-import streamlit as st
 from enum import StrEnum
+
+import streamlit as st
 from news_api_ui.utils.load_data import load_data
-from typing import Any, List
 
 NEWS_API_URL = os.getenv("NEWS_API_URL")
 assert NEWS_API_URL is not None, "Invalid 'NEWS_API_URL' received"

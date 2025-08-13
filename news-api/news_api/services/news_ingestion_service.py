@@ -1,10 +1,11 @@
+import asyncio
 import logging
-import os
 from datetime import datetime
 from typing import Annotated
 
 from fastapi import Depends
 from langchain_community.utils.math import cosine_similarity
+from news_api.config.config import Config
 from news_api.connectors.opensearch_connector import OpensearchConnector
 from news_api.models.news import News, NewsEmbedding
 from news_api.repositories.news import NewsRepository, get_news_repository
@@ -18,9 +19,6 @@ logger = logging.getLogger(__name__)
 # Corpus of words to compare relevancy upon
 CORPUS: list[str] = ["cybersecurity threats", "outages", "software bugs"]
 
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-assert OPENAI_API_KEY is not None, "Invalid OPENAI_API_KEY"
-
 
 class NewsIngestionService:
     def __init__(
@@ -33,6 +31,19 @@ class NewsIngestionService:
         self.repository = repository
         self.ingestion_threshold = ingestion_threshold
         self._embedded_corpus = dict()
+
+    async def news_exists(self, news: News) -> bool:
+        """Check either a given news already exists in database
+
+        Args:
+            news (News): The news to look upon
+        Returns:
+            bool
+        """
+        if await self.repository.get_news(id=news.id) is not None:
+            return True
+        else:
+            return False
 
     def embedded_corpus(self) -> dict[str, list[list[float]]]:
         """Compute the embeddings of the corpus
@@ -51,21 +62,28 @@ class NewsIngestionService:
                 )
         return self._embedded_corpus
 
-    def should_ingest(self, news: News) -> tuple[bool, list[NewsEmbedding]]:
+    async def should_ingest(self, news: News) -> tuple[bool, News]:
         """Check if a news content is relevant enough to be ingested
 
-        To do so, we tokenize the news content. Then we compute the
-        embeddings for each split. We compute the cosine similarity
-        for each split. We compute the average of the split and if
-        it's higher or equal to the given threshold, the content can
-        be ingested.
+        To do so, we:
+            - check if the news is already indexed or not
+            - tokenize the news content
+            - compute the embeddings for each text chunk.
+            - compute the cosine similarity for each split with each corpus chunk
+            - sort the results and if the highest is superior or equal to threshold
+            then, news is ingested
 
         Args:
             news (News): News to ingest
 
         Returns:
-            tuple[boolean, list[NewsEmbedding]]
+            tuple[boolean, News]
         """
+        # Check if the news already indexed in db
+        if await self.news_exists(news):
+            logger.debug(f"News: {news.id} already exists, so dropped.")
+            return False, news
+
         # Split the raw content
         text_chunks: list[str] = self.embeddings_service.split_text(
             text=news.body if news.body is not None else ""
@@ -86,19 +104,39 @@ class NewsIngestionService:
         for embedding, chunk in zip(text_embeddings, text_chunks):
             news_embeddings.append(NewsEmbedding(chunk=chunk, embedding=embedding))
 
-        corpus_similarities_scores.sort()
-        return (
-            corpus_similarities_scores[-1] >= self.ingestion_threshold,
-            news_embeddings,
-        )
+        news.embeddings = news_embeddings
 
-    async def ingest_news(self, news: News):
+        corpus_similarities_scores.sort()
+        return (corpus_similarities_scores[-1] >= self.ingestion_threshold, news)
+
+    async def ingest_single_news(self, news: News):
+        """Ingest a single news into database
+
+        Args:
+            news (News): News to ingest
+        Returns:
+            bool: Either news was ingested
+        """
+        should_ingest, updated_news = await self.should_ingest(news)
+        if should_ingest:
+            await self.repository.add_news(updated_news)
+            return True
+        return False
+
+    async def ingest_news(self, news: list[News]) -> int:
         """Ingest news into database
 
         Args:
-            news (News)
+            news (list[News]): List of news to ingest
+        Returns:
+            int: count of news ingested
         """
-        await self.repository.add_news(news)
+        tasks: list[asyncio.Task[object]] = list()
+        async with asyncio.TaskGroup() as tg:
+            for n in news:
+                task = tg.create_task(self.ingest_single_news(n))
+                tasks.append(task)
+        return sum([task.result() for task in tasks])  # type: ignore
 
 
 async def get_news_ingestion_service(
@@ -139,10 +177,17 @@ if __name__ == "__main__":
         ),
     ]
 
+    config = Config()
     ingestion_service = NewsIngestionService(
         embeddings_service=NewsEmbeddingsService(),
-        repository=NewsRepository(connector=OpensearchConnector()),
+        repository=NewsRepository(
+            connector=OpensearchConnector(
+                user=config.opensearch_user,
+                password=config.opensearch_password,
+                host=config.opensearch_host,
+            )
+        ),
     )
     for ex in exemples:
-        result, _ = ingestion_service.should_ingest(ex)
+        result, _ = asyncio.run(ingestion_service.should_ingest(ex))
         print(result)

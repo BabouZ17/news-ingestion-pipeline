@@ -14,6 +14,12 @@ class NewsRepository:
     def map_to_news(results: list[dict[str, Any]]) -> list[News]:
         return [News.model_validate(n) for n in results]
 
+    async def get_news(self, id: str) -> News | None:
+        result: dict[str, Any] | None = await self.connector.get_document(
+            index=self.index, id=id
+        )
+        return News.model_validate(result) if result is not None else None
+
     async def knn_search(self, vector: list[float], k: int = 20) -> list[News]:
         body = {
             "query": {

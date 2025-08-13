@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
 
-class Response(BaseModel):
+class CustomResponse(BaseModel):
     message: str
     details: str | None = None

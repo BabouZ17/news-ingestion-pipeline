@@ -1,5 +1,6 @@
-import requests
 from typing import Any
+
+import requests
 
 
 def load_data(url: str, path: str, query: str | None = None) -> list[dict[str, Any]]:

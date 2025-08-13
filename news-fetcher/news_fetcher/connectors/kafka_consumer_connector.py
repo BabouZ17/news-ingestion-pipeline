@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List
+from typing import Any
 from uuid import uuid4
 
 from kafka import KafkaConsumer
@@ -29,7 +29,7 @@ class Message(BaseModel):
 class KafkaConsumerConnector:
     def __init__(
         self,
-        bootstrap_servers: List[str],
+        bootstrap_servers: list[str],
         topic: str,
         group_id: str = "default",
         api_version: str = "2.2.15",
@@ -52,16 +52,16 @@ class KafkaConsumerConnector:
         logger.debug("Unsubscribing...")
         self.consumer.unsubscribe()
 
-    def consume(self) -> List[Message] | None:
+    def consume(self) -> list[Message] | None:
         """Poll for new messages.
 
         Returns:
-            List[Message] | None: Polled messages if any, None otherwise
+            list[Message] | None: Polled messages if any, None otherwise
         Raises:
             NewsFetcherConsumerException: When polling failed.
         """
         try:
-            records: Dict = self.consumer.poll()
+            records: dict[str, Any] = self.consumer.poll()
             logger.debug(f"Received records: {records}")
             if records:
                 for _, consumer_records in records.items():

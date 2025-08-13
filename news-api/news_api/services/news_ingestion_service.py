@@ -94,10 +94,10 @@ class NewsIngestionService:
         text_embeddings = self.embeddings_service.create_embeddings(text_chunks)
 
         corpus_similarities_scores: list[float] = list()
-        for corpus_embedding in self.embedded_corpus().values():
-            corpus_similarities_scores.append(
-                cosine_similarity(corpus_embedding, text_embeddings)[0][0]
-            )
+        for corpus_text, corpus_embedding in self.embedded_corpus().items():
+            similarity = cosine_similarity(corpus_embedding, text_embeddings)[0][0]
+            logger.debug(f"Similarity for corpus: {corpus_text} is: {similarity}")
+            corpus_similarities_scores.append(similarity)
 
         # Map NewsEmbedding
         news_embeddings: list[NewsEmbedding] = list()
@@ -152,6 +152,7 @@ async def get_news_ingestion_service(
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.DEBUG)
 
     exemples = [
         News(

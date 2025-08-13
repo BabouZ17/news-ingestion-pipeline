@@ -16,7 +16,7 @@ services:
     build:
       context: ./news-fetcher
     environment:
-      - TOPIC=test
+      - TOPIC=news
       - BOOTSTRAP_SERVERS=kafka:9092
       - NEWS_API_URL=http://news-api:8002/ingest
     command: python3 main.py
@@ -29,7 +29,7 @@ services:
     build:
       context: ./news-scheduler
     environment:
-      - TOPIC=test
+      - TOPIC=news
       - BOOTSTRAP_SERVERS=kafka:9092
       - PORT=8001
     ports:

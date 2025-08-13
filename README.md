@@ -29,7 +29,7 @@ News:
 | source | str |
 | title | str |
 | body | Optional[str] |
-| embeddings | List[Embedding] |
+| embeddings | Optional[List[Embedding]] = None |
 | published_at | datetime |
 
 News object example:

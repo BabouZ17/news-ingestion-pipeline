@@ -4,10 +4,10 @@ The aim of this project is to build an ingestion pipeline for news. The system h
 
 ## System design
 
-### Mocking news
-The fake-news-api is a service acting as a dummy store for synthetic news.
-
 ### Data flow
+
+#### Mocking news
+The fake-news-api is a service acting as a dummy store for synthetic news.
 
 #### Fetching news
 Before ingesting the news, the system needs to fetch them (*this is assuming the news sources cannot push the updates to us).

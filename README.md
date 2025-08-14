@@ -11,10 +11,10 @@ The fake-news-api is a service acting as a dummy store for synthetic news.
 #### Fetching news
 Before ingesting the news, the system needs to fetch them. To do so, we can use polling or pushing.
 
-Polling approach:
+**Polling approach**:
     To consume the news from the different APIs, we can have a service that will store references to news source to poll at a given frequency. When the internal scheduler of the service has a job to execute, it runs it.
 
-Pushing approach:
+**Pushing approach**:
     We will expose an endpoint that accepts a news job and when invoked, will run a job directly.
 
 The news-scheduler service stores in database (memory currently for the sake of simplicity) a list of jobs to execute at a given time. No storage is needed when using the pushing approach as the jobs are not persisted (directly executed).

@@ -10,8 +10,6 @@ from news_fetcher.connectors.news_api_connector import NewsAPIConnector
 from news_fetcher.fetchers.http_fecther import HTTPFetcher
 from news_fetcher.services.news_service import NewsService
 
-logging.basicConfig(level=logging.DEBUG)
-logging.getLogger("kafka").setLevel(logging.INFO)
 
 logger = logging.getLogger(__name__)
 

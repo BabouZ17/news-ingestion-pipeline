@@ -1,11 +1,69 @@
 # news-ingestion-pipeline
-The aim of this project is to build an ingestion pipeline for news. The system has to be able to ingest news on the fly, rank them and display them.
+The aim of this project is to build an ingestion pipeline for news. The system has to be able to ingest news on the fly, rank them and retrieve them.
+
 
 ## System design
 
-### High level design
+### Mocking news
+The fake-news-api is a service acting as a dummy store for synthetic news.
 
-![notfound](./resources/high_level_design.png)
+### Data flow
+
+#### Fetching news
+Before ingesting the news, the system needs to fetch them (*this is assuming the news sources cannot push the updates to us).
+To consume the news from the different APIs, we can have a service that will store references to news source to poll at a given frequency.
+
+The news-scheduler service stores in memory a list of jobs(or references) to execute at a given time. When a news is to be fetched, a job containing the news information is run.
+
+Example of a news fetching job:
+```
+{
+	"id": "6305c04c-ee9c-4d11-980f-12391ac3186e",
+	"name": "fake-news-api",
+	"url": "http://fake-news-api:8000/api/news"
+}
+```
+
+To distribute news fetching, we will leverage kafka, as it is a distributed event streaming platform. The news-scheduler service will act as a producer while we will have the news-fetcher instances acting as consumers.
+
+Every instance of the news-fetcher is listening to a given topic. Upon receiving a new message, the fetcher will download the news from its source and validate the format.
+
+![notfound](./resources/news_fetching.png)
+
+#### Ingesting news
+Once the news's content is downloaded, the news-fetcher will invoke the endpoint responsible for ingestion on the news-api. The news-api is the service responsible for
+ingesting and querying news.
+
+![notfound](./resources/news_ingestion.png)
+
+#### Making queries
+Once the news are indexed in the database, we can make queries to retrieve them. To make it more user friendly, a simple streamlit app is available [here](#services).
+
+The design for making queries will look like this at this point:
+![notfound](./resources/querying_news.png)
+
+#### Ads filtering by relevancy
+To measure relevancy of a news related to our IT managers interests, we use cosine similarity and embeddings.
+
+The flow is as follow:
+1. Check if the news is already in the index (news is not ingested if already present)
+2. Tokenize the corpus sentences ("cybersecurity threats", "outage", "software bugs")
+3. Compute embeddings for the tokenized corpus chunks
+4. Tokenize the news body
+5. Compute embeddings for the tokenized news body chunks
+6. For each corpus sentence, we compute the cosine similarity with the news body embeddings.
+7. Sort the corpus similarities.
+8. If highest superior or equal to arbitrary threshold, then news is valid for ingestion, otherwise discarded.
+
+![notfound](./resources/filtering_relevancy.png)
+
+#### Search / Retrieval of news
+The design supports three ways of retrieving the news:
+| Retrieval type | Description |
+| -------------- | ----------- |
+| keyword | Opensearch uses a BM25 algorithm to rank documents which basically gives higher points when the query terms are frequently used [more details](https://docs.opensearch.org/latest/search-plugins/keyword-search/). |
+| semantic | The semantic search uses the embeddings computed to make an approximate knn search. More semantically close text chunks in news will have a higher cosine similarity and then rank higher in the result. |
+| hybrid | The hybrid search leverages the semantic searches but add boosting to the result. The "published_at" field of the news is boosted to move news 1 day old higher in the reponse. |
 
 ### Data
 NewsEmbeddings:
@@ -42,29 +100,8 @@ News object example:
     "published_at": "2025-01-01T00:00:00"
 }
 ```
-
-### Ads filtering and relevancy
-To measure relevancy of a news related to our IT managers interests, we use cosine_similarity and embeddings.
-
-The flow is as follow:
-1. Check if the news is already in the index (news is not ingested if already present)
-2. Tokenize the corpus sentences ("cybersecurity threats", "outage", "software bugs")
-3. Compute embeddings for the tokenized corpus chunks
-4. Tokenize the news body
-5. Compute embeddings for the tokenized news body chunks
-6. For each corpus sentence, we compute the cosine similarity with the news body embeddings.
-7. Sort the corpus similarities.
-8. If highest superior or equal to arbitrary threshold, then news is valid for ingestion, otherwise discarded.
-
-![notfound](./resources/filtering_relevancy.png)
-
-### Search / Retrieval of news
-The design supports three ways of retrieving the news:
-| Retrieval type | Description |
-| -------------- | ----------- |
-| keyword | Opensearch uses a BM25 algorithm to rank documents which basically gives higher points when the query terms are frequently used [more details](https://docs.opensearch.org/latest/search-plugins/keyword-search/). |
-| semantic | The semantic search uses the embeddings computed to make an approximate knn search. More semantically close text chunks in news will have a higher cosine similarity and then rank higher in the result. |
-| hybrid | The hybrid search leverages the semantic searches but add boosting to the result. The "published_at" field of the news is boosted to move news 1 day old higher in the reponse. |
+### High level design
+![notfound](./resources/high_level_design.png)
 
 ## How to setup
 
@@ -269,4 +306,4 @@ I think this could be handled by a dedicated Machine Learning model trained with
 Error handling was kept to really the basis. The design did not dive in complex cases. For instance, once a news-fetcher fails to download the news content, should it commit the offset to kafka and skip the news or maybe push it to another retry alike topoc.
 
 #### News scheduler
-The news-scheduler uses a library called apscheduler and is relevant for simple design. But in the real word, we would need a more robust solution involving a broker to not loose the state of the scheduled jobs in case of a failure. Also, in the current design, if we increase the number of workers for news-scheduler, the same scheduled jobs will run multiple times.
+The news-scheduler uses a library called apscheduler and is relevant for simple design. But in the real word, we would need a more robust solution involving a broker (such as Celery) to not loose the state of the scheduled jobs in case of a failure. Also, in the current design, if we increase the number of workers for news-scheduler, the same scheduled jobs will run multiple times.

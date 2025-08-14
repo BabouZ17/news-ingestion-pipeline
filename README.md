@@ -1,7 +1,6 @@
 # news-ingestion-pipeline
 The aim of this project is to build an ingestion pipeline for news. The system has to be able to ingest news on the fly, rank them and retrieve them.
 
-
 ## System design
 
 ### Data flow
@@ -10,10 +9,15 @@ The aim of this project is to build an ingestion pipeline for news. The system h
 The fake-news-api is a service acting as a dummy store for synthetic news.
 
 #### Fetching news
-Before ingesting the news, the system needs to fetch them (*this is assuming the news sources cannot push the updates to us).
-To consume the news from the different APIs, we can have a service that will store references to news source to poll at a given frequency.
+Before ingesting the news, the system needs to fetch them. To do so, we can use polling or pushing.
 
-The news-scheduler service stores in memory a list of jobs(or references) to execute at a given time. When a news is to be fetched, a job containing the news information is run.
+Polling approach:
+    To consume the news from the different APIs, we can have a service that will store references to news source to poll at a given frequency. When the internal scheduler of the service has a job to execute, it runs it.
+
+Pushing approach:
+    We will expose an endpoint that accepts a news job and when invoked, will run a job directly.
+
+The news-scheduler service stores in database (memory currently for the sake of simplicity) a list of jobs to execute at a given time. No storage is needed when using the pushing approach as the jobs are not persisted (directly executed).
 
 Example of a news fetching job:
 ```

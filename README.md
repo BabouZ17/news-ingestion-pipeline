@@ -28,9 +28,9 @@ Example of a news fetching job:
 }
 ```
 
-To distribute news fetching, we will leverage kafka, as it is a distributed event streaming platform. The news-scheduler service will act as a producer while we will have the news-fetcher instances acting as consumers.
+To distribute news fetching, we will leverage kafka, as it is a distributed event streaming platform. The news-scheduler service will act as a producer while we will have the news-fetcher acting as consumer.
 
-Every instance of the news-fetcher is listening to a given topic. Upon receiving a new message, the fetcher will download the news from its source and validate the format.
+Upon receiving a new message, the fetcher will download the news from its source and validate the format. If there are severals formats for the news, we can have one kafka topic per format. In the current design, we only used one topic.
 
 ![notfound](./resources/news_fetching.png)
 
@@ -140,12 +140,8 @@ The project needs one kafka topic to be created. If you do not want to change th
 docker exec -it kafka kafka-topics.sh --create --topic news --partitions 3 --bootstrap-server kafka:9092
 ```
 
-### Kafka UI
-Feel free to use Kafbat UI to see what is happening on the kafka level.
-You can access it on http://localhost:8080
-
 ### Opensearch index
-The different embeddings are stored on an opensearch index. To create it,
+The different news are stored on an opensearch index. To create it,
 make a GET HTTP call on the endpoint http://localhost:8002/api/news/createIndex
 
 ### OpenAI API Key
@@ -167,7 +163,7 @@ The following mapping was used for the opensearch index:
     "mappings": {
         "properties": {
             "id": {
-                "type": "text"
+                "type": "keyword"
             },
             "source": {
                 "type": "keyword"
@@ -289,6 +285,7 @@ Find bellow the different services information.
 | news-fetcher | Service responsible for downloading news content. It is listening on kafka topics. | Not applicable |
 | news-api | Service responsible for managing news, creating index and making searches | http://localhost:8002/docs |
 | news-appi-ui | A little streamlit application to run different types of searches (keyword, semantic, hybrid) | http://localhost:8081/docs |
+| kafka | Streaming platform | http://localhost:9092 |
 | kafba ui | Dashboard to interact with kafka cluster | http://localhost:8080 |
 | opensearch | Document database to store vectors and run queries upon them | http://localhost:9200 |
 | opensearch-dashboards | Dashboard to interact with opensearch indices - PS: username: admin, password: F*ax3Q(8t55O | http://localhost:5601 |
@@ -299,15 +296,20 @@ Find bellow the different services information.
 In the current design, the approach to get news was to do Polling. A better approach would be to have the different news api invoke our news-scheduler once a new news is avaible. It will avoid wasting resource on our side.
 
 #### Scaling
+Kafka:
 Assuming we need to scale the system for high frequency updates, we could do several steps:
-* Make one topic per news source
-* Increase the number of members in the consumer group listening to the topic as long as the number of consumers in a group does not exceed the number of partitions
+* Make one topic per news source format
+* Increase the number of partitions on the kafka topics
+* Increase the number of members in the consumer group listening to a topic as long as the number of consumers in a group does not exceed the number of partitions
+
+Opensearch:
+Assuming we dont need the keyword search, we dont need to index the "body" and "title" of each document, therefore we will save disk space. 
 
 #### Detecting fake news
 I think this could be handled by a dedicated Machine Learning model trained with features such as language patterns, sentiment analysis and source reliability.
 
 #### Error handling
-Error handling was kept to really the basis. The design did not dive in complex cases. For instance, once a news-fetcher fails to download the news content, should it commit the offset to kafka and skip the news or maybe push it to another retry alike topoc.
+Error handling was kept to really the basis. The design did not dive in complex cases. For instance, once a news-fetcher fails to download the news content, we could have a topic acting as a dead letter queue.
 
 #### News scheduler
-The news-scheduler uses a library called apscheduler and is relevant for simple design. But in the real word, we would need a more robust solution involving a broker (such as Celery) to not loose the state of the scheduled jobs in case of a failure. Also, in the current design, if we increase the number of workers for news-scheduler, the same scheduled jobs will run multiple times.
+The news-scheduler uses a library called apscheduler and is relevant for simple design. But in the real word, we would need a more robust solution involving a broker to not loose the state of the scheduled jobs in case of a failure. Also, in the current design, if we increase the number of workers for news-scheduler, the same scheduled jobs will run multiple times.

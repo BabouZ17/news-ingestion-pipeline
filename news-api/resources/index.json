@@ -7,7 +7,7 @@
     "mappings": {
         "properties": {
             "id": {
-                "type": "text"
+                "type": "keyword"
             },
             "source": {
                 "type": "keyword"

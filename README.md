@@ -28,7 +28,7 @@ News:
 | id | str |
 | source | str |
 | title | str |
-| body | Optional[str] |
+| body | Optional[str] = None |
 | embeddings | Optional[List[Embedding]] = None |
 | published_at | datetime |
 
@@ -257,10 +257,16 @@ Find bellow the different services information.
 #### Polling / Push
 In the current design, the approach to get news was to do Polling. A better approach would be to have the different news api invoke our news-scheduler once a new news is avaible. It will avoid wasting resource on our side.
 
+#### Scaling
+Assuming we need to scale the system for high frequency updates, we could do several steps:
+* Make one topic per news source
+* Increase the number of members in the consumer group listening to the topic as long as the number of consumers in a group does not exceed the number of partitions
+
+#### Detecting fake news
+I think this could be handled by a dedicated Machine Learning model trained with features such as language patterns, sentiment analysis and source reliability.
+
 #### Error handling
 Error handling was kept to really the basis. The design did not dive in complex cases. For instance, once a news-fetcher fails to download the news content, should it commit the offset to kafka and skip the news or maybe push it to another retry alike topoc.
 
 #### News scheduler
 The news-scheduler uses a library called apscheduler and is relevant for simple design. But in the real word, we would need a more robust solution involving a broker to not loose the state of the scheduled jobs in case of a failure. Also, in the current design, if we increase the number of workers for news-scheduler, the same scheduled jobs will run multiple times.
-
-#### Measuring relevancy

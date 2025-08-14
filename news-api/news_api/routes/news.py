@@ -23,9 +23,10 @@ async def hybrid_search_news(
         NewsEmbeddingsService, Depends(get_news_embeddings_service)
     ],
     query: Annotated[str, Query(max_length=50)] = "cybersecurity",
+    boost: Annotated[int, Query(max=1_000, min=1)] = 100,
 ) -> list[BaseNews]:
     query_vector: list[float] = news_embeddings_service.create_embeddings([query])[0]
-    news: list[News] = await repository.hybrid_search(vector=query_vector)
+    news: list[News] = await repository.hybrid_search(vector=query_vector, boost=boost)
     return [BaseNews.model_validate(n) for n in news]
 
 
